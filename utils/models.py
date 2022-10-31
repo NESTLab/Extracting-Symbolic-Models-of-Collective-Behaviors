@@ -31,22 +31,19 @@ class GenericGNN(MessagePassing):
         )
             
     def forward(self, x, edge_index, edge_attr=None):
-        if edge_attr:
-            result = self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        if edge_attr is not None:
+            return self.propagate(edge_index, x=x, edge_attr=edge_attr)
         else:
-            result = self.propagate(edge_index, x=x)
-        return result
+            return self.propagate(edge_index, x=x)
     
     def message(self, x_i, x_j, edge_attr=None):
-        if edge_attr:
-            tmp = torch.cat([x_i, x_j, edge_attr], dim=1)
+        if edge_attr is not None:            
+            return self.msg_fnc(torch.cat([x_i, x_j, edge_attr], dim=1))
         else:
-            tmp = torch.cat([x_i, x_j], dim=1)
-        return self.msg_fnc(tmp)
-    
+            return self.msg_fnc(torch.cat([x_i, x_j], dim=1))
+        
     def update(self, aggr_out, x=None):
-        tmp = torch.cat([x, aggr_out], dim=1)
-        return self.node_fnc(tmp)
+        return self.node_fnc(torch.cat([x, aggr_out], dim=1))
     
     def loss(self, actual, pred):
         return torch.sum(torch.abs(actual - pred))
