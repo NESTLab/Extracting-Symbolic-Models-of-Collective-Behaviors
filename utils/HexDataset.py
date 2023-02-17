@@ -30,11 +30,14 @@ class HexDataset(InMemoryDataset):
 
         data_list = []
         
-        files = listdir('./data/hex-logs')
+        files = listdir('./data_new/hex-logs')
+#         files = listdir('./local_data/hex-logs') #for testing
         count = 0
+        print(len(files))
         for i in range(len(files)):
             f = files[i]
-            filepath = join('./data/hex-logs',f)
+            filepath = join('./data_new/hex-logs',f)
+#             filepath = join('./local_data/hex-logs',f) #for testing
             if isfile(filepath):
             
                 if count == 1000:
@@ -69,40 +72,78 @@ class HexDataset(InMemoryDataset):
                     
                     att = []
 
-                    for k in range(nAgents):                        
+                    for k in range(nAgents):
+                        d2 = [] # plus one step
+                        focal=traj[k]
+                        focal_y=acc[k]
+                        graph_init=[[0,0]]
+                        graph_init_y=[[focal_y[j][0],focal_y[j][1]]]
+                        e=[]
+                        e1 = [] # edge from
+                        e2 = []
+                        for l in range(nAgents):
+                            neighbor=traj[l]
+#                             neighbor_y=acc[l]
+                            if k==l:
+                                continue
+                            e1.extend([0, len(graph_init)])
+                            e2.extend([len(graph_init), 0])
+                            graph_init.append([neighbor[j][0]-focal[j][0], neighbor[j][1]-focal[j][1]])
+#                             graph_init_y.append([neighbor_y[j][0]-focal_y[j][0], neighbor_y[j][1]-focal_y[j][1]])
+                                
+#                         v1 = traj[k][j][0]
+#                         v2 = traj[k][j][1]
+#                         d1.append([v1, v2])
+#                         d11.append(v1)
+#                         d12.append(v2)
                         
-                        v1 = traj[k][j][0]
-                        v2 = traj[k][j][1]
-                        d1.append([v1, v2])
-                        d11.append(v1)
-                        d12.append(v2)
-                        
-                        v3 = traj[k][j+1][0]
-                        v4 = traj[k][j+1][1]
+#                         v3 = traj[k][j+1][0]
+#                         v4 = traj[k][j+1][1]
                         d2.append(acc[k][j][:2]) # get only the x and y accel
                         
-                        e1.extend([k for _ in range(len(nHis[k][j]))])
-                        for val in nHis[k][j]:
-                            try:
-                                e2.append(val[0])
-                                att.append(val[1])
-                            except TypeError as e:
-                                e2.append(val-1)
-                                att.append([1])
+                        x = torch.tensor(graph_init, dtype=torch.float)
+                        e = torch.tensor(e, dtype=torch.long)
+                        e = torch.tensor([e1, e2], dtype=torch.long)
+                        a = torch.tensor(att, dtype=torch.float)
+#                         y = torch.tensor(graph_init_y, dtype=torch.float)
+                        y = torch.tensor(d2, dtype=torch.float)
+#                         print(graph_init_y)
+#                         print("y",y)
+                        data_list.append(Data(x=x, edge_index=e, edge_attr=None, y=y))
 
-                    e = []
-                    for k in range(len(e1)):
-                        e.append([e1[k], e2[k]])
-                    
-                    x = torch.tensor(d1, dtype=torch.float)
-                    e = torch.tensor(e, dtype=torch.long)
-                    e = torch.tensor([e1, e2], dtype=torch.long)
-                    a = torch.tensor(att, dtype=torch.float)
-                    y = torch.tensor(d2, dtype=torch.float)
-                    
-                    data_list.append(Data(x=x, edge_index=e, edge_attr=None, y=y))
-                
+
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
+        
+#103->
+
+#                         e1.extend([k for _ in range(len(nHis[k][j]))])
+#                         for val in nHis[k][j]:
+#                             try:
+#                                 e2.append(val[0])
+#                                 att.append(val[1])
+#                             except TypeError as e:
+#                                 e2.append(val-1)
+#                                 att.append([1])
+
+#                     e = []
+#                     local_x=[]
+#                     local_y=[]
+                    #converting global to local(wrt to each other)
+#                     print(len(d1[0]))
+#                     for i in range(len(d1)):
+#                         temp_x=d1[i][0]
+#                         temp_y=d1[i][1]
+# #                         print(temp_x)
+#                         curr_local_x=[[x-temp_x,y-temp_y] for x,y in d1]
+#                         local_x.extend(curr_local_x)
+#                         curr_local_y=[[x-temp_x,y-temp_y] for x,y in d2]
+#                         local_y.extend(curr_local_y)
+
+#                     for k in range(len(e1)):
+#                         e.append([e1[k], e2[k]])
+#                     e=np.repeat(e, len(d1)-1)
+#                     print(e)
+#                     x = torch.tensor(d1, dtype=torch.float)
                

@@ -66,7 +66,7 @@ class Agent:
         elif CASE == "SQU":
             self.squareLattice()
 
-        self.centerPull()
+#         self.centerPull()
 
     def squareLattice(self):
         nHis = []
